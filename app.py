@@ -128,7 +128,7 @@ elif st.session_state.step == 8:
     st.title("Your AI Support Companion")
     st.write("Start typing your thoughts or concerns below.")
 
-    # Initialize OpenAI client with API key from Streamlit Secrets
+    # Load API key from Streamlit Secrets Manager
     client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
     if "messages" not in st.session_state:
