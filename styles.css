@@ -1,0 +1,21 @@
+/* styles.css */
+body {
+    background-color: #1a1a2e !important;
+    color: #fff !important;
+}
+
+input, textarea {
+    background-color: #333 !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: 5px !important;
+}
+
+button {
+    background-color: #4CAF50 !important;
+    color: white !important;
+    border: none !important;
+    padding: 10px 20px !important;
+    border-radius: 5px !important;
+    cursor: pointer !important;
+}
