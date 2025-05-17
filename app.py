@@ -2,17 +2,17 @@ import streamlit as st
 import sqlite3
 import datetime
 
-# --- Streamlit Page Config ---
+# Page Configuration
 st.set_page_config(page_title="Voice Health Tracker", page_icon="🎙️", layout="centered")
 
-# --- Optional Styles ---
+# Optional Styles
 try:
     with open("styles.css") as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 except FileNotFoundError:
-    pass  # Continue without styles if not present
+    pass
 
-# --- Database Setup ---
+# Database Setup
 conn = sqlite3.connect('health_logs.db')
 c = conn.cursor()
 c.execute('''
@@ -28,81 +28,77 @@ c.execute('''
 ''')
 conn.commit()
 
-# --- Initialize Session State ---
-if "step" not in st.session_state:
-    st.session_state.step = 1
+# Define Pages
+pages = [
+    {"title": "Welcome to Ash", "text": "You're in the right place.", "button": "Continue"},
+    {"title": "How old are you?", "options": ["18 – 24", "25 – 34", "35 – 44", "45 – 54", "55 – 64", "65+", "Prefer not to say"]},
+    {"title": "How do you identify?", "options": ["Female", "Male", "Non-binary", "Prefer not to say", "Other"]},
+    {"title": "What best describes your race/ethnicity?", "options": ["White / Caucasian", "Black / African American", "Hispanic / Latino", "Asian / South Asian / East Asian", "Native Hawaiian / Pacific Islander", "American Indian / Alaska Native", "Prefer not to say", "Other"]},
+    {"title": "What are you most looking for support with?", "options": ["Depression", "Anxiety", "Relationships", "Something else"]},
+    {"title": "Our Commitment to You", "text": "Your mental health is personal and private.", "button": "Continue"},
+]
 
-# --- Step 1: Collect Name ---
-if st.session_state.step == 1:
-    st.title("Step 1: Your Name")
-    name = st.text_input("What is your name?")
-    if st.button("Next"):
-        if name.strip() == "":
-            st.error("Please enter your name to continue.")
-        else:
-            st.session_state.name = name
-            st.session_state.step = 2
+# Initialize Session State
+if "page" not in st.session_state:
+    st.session_state.page = 0
+if "responses" not in st.session_state:
+    st.session_state.responses = {}
 
-# --- Step 2: Collect Age ---
-elif st.session_state.step == 2:
-    st.title("Step 2: Your Age")
-    age = st.text_input("How old are you?")
-    if st.button("Next"):
-        if age.strip() == "":
-            st.error("Please enter your age to continue.")
-        else:
-            st.session_state.age = age
-            st.session_state.step = 3
+# Progress Indicator
+progress_percentage = int((st.session_state.page / (len(pages) + 1)) * 100)
+st.progress(progress_percentage, f"Progress: {progress_percentage}%")
 
-# --- Step 3: Reason for Visiting ---
-elif st.session_state.step == 3:
-    st.title("Step 3: What Brings You Here?")
-    reason = st.text_input("e.g., stress, anxiety, period tracking")
-    if st.button("Next"):
-        st.session_state.reason = reason
-        st.session_state.step = 4
+# Render Current Page
+if st.session_state.page < len(pages):
+    current = pages[st.session_state.page]
+    st.title(current["title"])
 
-# --- Step 4: Health Description + Audio Recorder ---
-elif st.session_state.step == 4:
-    st.title("Step 4: Describe Your Health Today")
+    # Text-only page
+    if "text" in current:
+        st.markdown(current["text"])
+        if st.button(current.get("button", "Next")):
+            st.session_state.page += 1
+
+    # Option-selection page
+    elif "options" in current:
+        choice = st.radio("Select an option:", current["options"], key=f"page_{st.session_state.page}")
+        if st.button("Next"):
+            st.session_state.responses[current["title"]] = choice
+            st.session_state.page += 1
+
+# Final Health Check-in Page
+elif st.session_state.page == len(pages):
+    st.title("Describe Your Health Today")
     user_input = st.text_area("Speak or type your update")
 
-    # --- Optional Voice Recorder ---
-    st.subheader("Record Your Voice")
+    # Optional Voice Recorder
+    st.subheader("Record Your Voice (Optional)")
     audio_bytes = st.audio_input("Record your voice")
 
     if audio_bytes:
         st.audio(audio_bytes, format="audio/wav")
-        # You could save 'audio_bytes' to storage or process it further here.
+        st.success("Audio recorded successfully!")
 
     if st.button("Submit"):
-        if user_input.strip() == "":
+        if not user_input.strip():
             st.error("Please describe your health to continue.")
         else:
             today_date = datetime.date.today().isoformat()
-            metrics = []
-
-            # Simulated metric extraction
-            text_lower = user_input.lower()
-            if "period" in text_lower:
-                metrics.append(("period_start", "yes"))
-            if "spotting" in text_lower:
-                metrics.append(("spotting", "yes"))
-            if "headache" in text_lower:
-                metrics.append(("symptoms", "headache"))
-            if "cramps" in text_lower:
-                metrics.append(("symptoms", "cramps"))
-            if "low" in text_lower or "sad" in text_lower:
-                metrics.append(("mood", "low"))
-
-            for metric_name, metric_value in metrics:
-                c.execute('''
-                    INSERT INTO health_metrics (date, user_name, user_age, reason, metric_name, metric_value, raw_input_text)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                ''', (today_date, st.session_state.name, st.session_state.age, st.session_state.reason,
-                      metric_name, metric_value, user_input))
-                conn.commit()
-
-            st.success(f"Logged: {', '.join([m[0] for m in metrics])} for today.")
+            c.execute('''
+                INSERT INTO health_metrics (date, user_name, user_age, reason, metric_name, metric_value, raw_input_text)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                today_date,
+                st.session_state.responses.get("How do you identify?", "Unknown"),
+                st.session_state.responses.get("How old are you?", "Unknown"),
+                st.session_state.responses.get("What are you most looking for support with?", "Unknown"),
+                "self_reported",
+                "submitted",
+                user_input
+            ))
+            conn.commit()
+            st.success("Your response has been saved. Thank you!")
             st.balloons()
-            st.session_state.step = 1  # Restart for next user
+            # Reset for next user
+            st.session_state.page = 0
+            st.session_state.responses = {}
