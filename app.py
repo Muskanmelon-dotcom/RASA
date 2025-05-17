@@ -1,7 +1,7 @@
 import streamlit as st
 import sqlite3
 import datetime
-import openai
+import os
 
 # --- Streamlit Page Config ---
 st.set_page_config(page_title="Voice Health Tracker", page_icon="🎙️", layout="centered")
@@ -12,6 +12,9 @@ try:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 except FileNotFoundError:
     pass
+
+# --- Ensure Audio Save Directory ---
+os.makedirs("recordings", exist_ok=True)
 
 # --- Database Setup ---
 conn = sqlite3.connect('health_logs.db')
@@ -93,6 +96,11 @@ elif st.session_state.step == 7:
 
     if audio_bytes:
         st.audio(audio_bytes, format="audio/wav")
+        # Save audio to file
+        filename = f"recordings/{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.wav"
+        with open(filename, "wb") as f:
+            f.write(audio_bytes.getvalue())
+        st.success(f"Saved your recording to {filename}")
 
     if st.button("Submit"):
         if user_input.strip() == "":
@@ -121,43 +129,4 @@ elif st.session_state.step == 7:
                 conn.commit()
 
             st.success(f"Logged: {', '.join([m[0] for m in metrics])} for today.")
-            st.session_state.step = 8
-
-# --- Step 8: Voice-Driven Conversational AI Companion ---
-elif st.session_state.step == 8:
-    st.title("Your AI Support Companion")
-    st.write("Record your voice and Ash will respond to you.")
-
-    client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-
-    if "messages" not in st.session_state:
-        st.session_state.messages = [{
-            "role": "system",
-            "content": "You are a supportive and empathetic mental health companion named Ash."
-        }]
-
-    st.subheader("Record Your Voice")
-    audio_bytes = st.audio_input("Record your message")
-
-    if audio_bytes and st.button("Send"):
-        with st.spinner("Transcribing..."):
-            transcription = client.audio.transcriptions.create(
-                model="whisper-1",
-                file=audio_bytes
-            )
-            user_msg = transcription.text.strip()
-            st.session_state.messages.append({"role": "user", "content": user_msg})
-            st.markdown(f"**You said:** {user_msg}")
-
-            with st.spinner("Ash is thinking..."):
-                response = client.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=st.session_state.messages
-                )
-                reply = response.choices[0].message.content.strip()
-                st.session_state.messages.append({"role": "assistant", "content": reply})
-
-            st.markdown(f"**Ash:** {reply}")
-
-    if st.button("Reset Conversation"):
-        st.session_state.pop("messages")
+            st.session_state.step = 1  # Restart for next user
