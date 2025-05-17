@@ -1,21 +1,44 @@
-/* styles.css */
-body {
-    background-color: #1a1a2e !important;
-    color: #fff !important;
+/* Center all content */
+body, .block-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
-input, textarea {
-    background-color: #333 !important;
-    color: #fff !important;
-    border: none !important;
-    border-radius: 5px !important;
-}
-
+/* Increase button size */
 button {
-    background-color: #4CAF50 !important;
-    color: white !important;
-    border: none !important;
-    padding: 10px 20px !important;
-    border-radius: 5px !important;
-    cursor: pointer !important;
+    font-size: 1.2rem !important;
+    padding: 0.75rem 2rem !important;
+    border-radius: 8px !important;
+}
+
+/* Customize progress bar */
+div[role="progressbar"] {
+    background-color: #e0f7fa !important;
+}
+
+/* Style radio buttons */
+label[data-baseweb="radio"] {
+    font-size: 1.1rem !important;
+    padding: 0.5rem 0;
+}
+
+/* Add subtle card effect */
+.stRadio, .stButton, .stTextArea, .stTextInput, .stAudioInput {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+    border-radius: 8px !important;
+    padding: 0.5rem !important;
+}
+
+/* Title styling */
+h1 {
+    font-size: 2.2rem !important;
+    color: #4a4a4a !important;
+}
+
+/* Success message */
+.stAlert > div {
+    background-color: #e8f5e9 !important;
+    color: #2e7d32 !important;
 }
