@@ -1,7 +1,6 @@
 import streamlit as st
 import os
 import datetime
-import io
 
 # --- Streamlit Page Config ---
 st.set_page_config(page_title="Voice-Only ChatGPT Prototype", page_icon="🎙️", layout="centered")
@@ -13,14 +12,18 @@ os.makedirs("recordings", exist_ok=True)
 # --- Voice Interaction Section ---
 st.subheader("Speak and Submit Below (Simulated AI Will Reply)")
 
-audio_bytes = st.audio_input("Record your voice")
+audio_data = st.audio_input("Record your voice")
 
-if audio_bytes:
+if audio_data is not None:
+    # Convert to bytes if needed
+    audio_bytes = audio_data.getvalue() if hasattr(audio_data, "getvalue") else audio_data
+
     # Save the uploaded audio
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"recordings/user_{timestamp}.wav"
     with open(filename, "wb") as f:
         f.write(audio_bytes)
+
     st.success(f"🎧 Saved your voice as {filename}")
 
     # Simulated AI voice response (replace with your backend integration later)
