@@ -128,32 +128,31 @@ elif st.session_state.step == 8:
     st.title("Your AI Support Companion")
     st.write("Start typing your thoughts or concerns below.")
 
-    api_key = st.text_input("Enter your OpenAI API Key", type="password")
-    if api_key:
-        openai.api_key = api_key
+    # Load API key from Streamlit Secrets Manager
+    openai.api_key = st.secrets["OPENAI_API_KEY"]
 
-        if "messages" not in st.session_state:
-            st.session_state.messages = [{
-                "role": "system",
-                "content": "You are a supportive and empathetic mental health companion named Ash."
-            }]
+    if "messages" not in st.session_state:
+        st.session_state.messages = [{
+            "role": "system",
+            "content": "You are a supportive and empathetic mental health companion named Ash."
+        }]
 
-        user_msg = st.text_input("You:")
-        if st.button("Send") and user_msg.strip():
-            st.session_state.messages.append({"role": "user", "content": user_msg})
-            with st.spinner("Ash is thinking..."):
-                response = openai.ChatCompletion.create(
-                    model="gpt-3.5-turbo",
-                    messages=st.session_state.messages
-                )
-                reply = response.choices[0].message.content.strip()
-                st.session_state.messages.append({"role": "assistant", "content": reply})
+    user_msg = st.text_input("You:")
+    if st.button("Send") and user_msg.strip():
+        st.session_state.messages.append({"role": "user", "content": user_msg})
+        with st.spinner("Ash is thinking..."):
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=st.session_state.messages
+            )
+            reply = response.choices[0].message.content.strip()
+            st.session_state.messages.append({"role": "assistant", "content": reply})
 
-        for msg in st.session_state.messages[1:]:
-            if msg["role"] == "user":
-                st.markdown(f"**You:** {msg['content']}")
-            else:
-                st.markdown(f"**Ash:** {msg['content']}")
+    for msg in st.session_state.messages[1:]:
+        if msg["role"] == "user":
+            st.markdown(f"**You:** {msg['content']}")
+        else:
+            st.markdown(f"**Ash:** {msg['content']}")
 
-        if st.button("Reset Conversation"):
-            st.session_state.pop("messages")
+    if st.button("Reset Conversation"):
+        st.session_state.pop("messages")
