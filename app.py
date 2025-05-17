@@ -3,7 +3,7 @@ import os
 from datetime import datetime as dt
 
 # --- Page Config ---
-st.set_page_config(page_title="Voice-Based Period Health Tracker", page_icon="🩸", layout="centered")
+st.set_page_config(page_title="RASA: Wellness that Listens", page_icon="🩸", layout="centered")
 
 # --- In-Memory Storage ---
 if "user_profile" not in st.session_state:
