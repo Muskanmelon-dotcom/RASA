@@ -68,7 +68,7 @@ elif st.session_state.step == 4:
     user_input = st.text_area("Speak or type your update")
 
     # --- Optional Voice Recorder ---
-    st.subheader("Optional: Record Your Voice")
+    st.subheader("Record Your Voice")
     audio_bytes = st.audio_input("Record your voice")
 
     if audio_bytes:
