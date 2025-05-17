@@ -1,63 +1,37 @@
 import streamlit as st
 import os
-import datetime
-import uuid
+from datetime import datetime
 
-# --- Streamlit Config ---
-st.set_page_config(page_title="Voice Health Companion", page_icon="🎙️", layout="centered")
+st.set_page_config(page_title="Voice Chat Prototype", page_icon="🎙️")
 
-# --- Styles ---
-try:
-    with open("styles.css") as f:
-        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-except FileNotFoundError:
-    pass
+st.title("🎙️ Voice-Based Conversational AI (Prototype)")
 
-# --- Session State ---
-if "conversation_id" not in st.session_state:
-    st.session_state.conversation_id = str(uuid.uuid4())
-if "history" not in st.session_state:
-    st.session_state.history = []
+# Create folder to save audio files
+SAVE_DIR = "recordings"
+os.makedirs(SAVE_DIR, exist_ok=True)
 
-st.title("🎙️ Voice Health Companion")
+# Initialize session state
+if "conversation_round" not in st.session_state:
+    st.session_state.conversation_round = 1
 
-st.write("Talk to your companion by recording your voice below. You’ll hear a voice response in return.")
-
-# --- Voice Input ---
-audio_bytes = st.audio_input("Press to Record and Speak")
+st.header(f"Round {st.session_state.conversation_round}: Your Turn")
+audio_bytes = st.audio_input("Record your voice and click Submit")
 
 if audio_bytes:
-    # --- Save Audio ---
-    save_folder = "saved_audio"
-    os.makedirs(save_folder, exist_ok=True)
-    filename = f"{st.session_state.conversation_id}_{len(st.session_state.history)}.wav"
-    filepath = os.path.join(save_folder, filename)
-    with open(filepath, "wb") as f:
+    # Save user audio
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    user_filename = f"{SAVE_DIR}/user_round_{st.session_state.conversation_round}_{timestamp}.wav"
+    with open(user_filename, "wb") as f:
         f.write(audio_bytes)
-    st.success(f"Saved your voice as {filename}")
+    st.success(f"Saved your voice as {user_filename}")
 
-    # --- Append to History ---
-    st.session_state.history.append({"user_audio": filepath})
+    # Simulated AI response (replace this with backend-generated audio)
+    dummy_response_path = "dummy_response.wav"  # Replace with real backend response
+    if os.path.exists(dummy_response_path):
+        st.audio(dummy_response_path, format="audio/wav")
+    else:
+        st.info("AI Response would play here (simulate with your backend)")
 
-    # --- Placeholder for Backend Response ---
-    st.info("Sending audio to backend for processing...")
-    
-    # Simulate voice response file (replace this with your backend logic)
-    # Here you can fetch `response_audio_file` from your backend processing
-    response_audio_file = filepath  # Dummy: Echoing back the same file
-
-    st.session_state.history[-1]["assistant_audio"] = response_audio_file
-
-# --- Playback Conversation History ---
-for i, entry in enumerate(st.session_state.history, 1):
-    st.markdown(f"**You (Turn {i}):**")
-    st.audio(open(entry["user_audio"], "rb").read(), format="audio/wav")
-
-    st.markdown(f"**Assistant (Turn {i}):**")
-    st.audio(open(entry["assistant_audio"], "rb").read(), format="audio/wav")
-
-# --- Reset Conversation ---
-if st.button("🔄 Reset Conversation"):
-    st.session_state.conversation_id = str(uuid.uuid4())
-    st.session_state.history = []
-    st.experimental_rerun()
+    if st.button("Next Round"):
+        st.session_state.conversation_round += 1
+        st.experimental_rerun()
