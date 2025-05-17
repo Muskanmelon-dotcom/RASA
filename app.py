@@ -62,18 +62,18 @@ elif st.session_state.step == 3:
         st.session_state.reason = reason
         st.session_state.step = 4
 
-# --- Step 4: Health Description + Audio Input ---
+# --- Step 4: Health Description + Audio Recorder ---
 elif st.session_state.step == 4:
     st.title("Step 4: Describe Your Health Today")
     user_input = st.text_area("Speak or type your update")
 
     # --- Optional Voice Recorder ---
     st.subheader("Optional: Record Your Voice")
-    audio_data = st.audio_input("Record your voice note (optional)")
+    audio_bytes = st.audio_input("Record your voice")
 
-    if audio_data:
-        st.audio(audio_data)
-        st.info("Audio recorded successfully! You can submit or record again.")
+    if audio_bytes:
+        st.audio(audio_bytes, format="audio/wav")
+        # You could save 'audio_bytes' to storage or process it further here.
 
     if st.button("Submit"):
         if user_input.strip() == "":
