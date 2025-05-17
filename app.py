@@ -120,7 +120,7 @@ elif st.session_state.step == 7:
                       metric_name, metric_value, user_input))
                 conn.commit()
 
-            st.success("Logged your update for today.")
+            st.success(f"Logged: {', '.join([m[0] for m in metrics])} for today.")
             st.session_state.step = 8
 
 # --- Step 8: Conversational AI Companion ---
@@ -128,31 +128,31 @@ elif st.session_state.step == 8:
     st.title("Your AI Support Companion")
     st.write("Start typing your thoughts or concerns below.")
 
-    try:
-        openai.api_key = st.secrets["OPENAI_API_KEY"]
-    except Exception:
-        st.error("API Key not configured in Streamlit Secrets. Please check deployment settings.")
-    else:
-        if "messages" not in st.session_state:
-            st.session_state.messages = [{
-                "role": "system",
-                "content": "You are a supportive and empathetic mental health companion named Ash."
-            }]
+    # Initialize OpenAI client with API key from Streamlit Secrets
+    client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
-        user_msg = st.text_input("You:")
-        if st.button("Send") and user_msg.strip():
-            st.session_state.messages.append({"role": "user", "content": user_msg})
-            with st.spinner("Ash is thinking..."):
-                response = openai.ChatCompletion.create(
-                    model="gpt-3.5-turbo",
-                    messages=st.session_state.messages
-                )
-                reply = response.choices[0].message.content.strip()
-                st.session_state.messages.append({"role": "assistant", "content": reply})
+    if "messages" not in st.session_state:
+        st.session_state.messages = [{
+            "role": "system",
+            "content": "You are a supportive and empathetic mental health companion named Ash."
+        }]
 
-        for msg in st.session_state.messages[1:]:
-            speaker = "You" if msg["role"] == "user" else "Ash"
-            st.markdown(f"**{speaker}:** {msg['content']}")
+    user_msg = st.text_input("You:")
+    if st.button("Send") and user_msg.strip():
+        st.session_state.messages.append({"role": "user", "content": user_msg})
+        with st.spinner("Ash is thinking..."):
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=st.session_state.messages
+            )
+            reply = response.choices[0].message.content.strip()
+            st.session_state.messages.append({"role": "assistant", "content": reply})
 
-        if st.button("Reset Conversation"):
-            st.session_state.pop("messages")
+    for msg in st.session_state.messages[1:]:
+        if msg["role"] == "user":
+            st.markdown(f"**You:** {msg['content']}")
+        else:
+            st.markdown(f"**Ash:** {msg['content']}")
+
+    if st.button("Reset Conversation"):
+        st.session_state.pop("messages")
