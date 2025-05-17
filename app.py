@@ -30,7 +30,7 @@ conn.commit()
 
 # Define Pages
 pages = [
-    {"title": "Welcome to Ash", "text": "You're in the right place.", "button": "Continue"},
+    {"title": "Welcome to RASA", "text": "You're in the right place.", "button": "Continue"},
     {"title": "How old are you?", "options": ["18 – 24", "25 – 34", "35 – 44", "45 – 54", "55 – 64", "65+", "Prefer not to say"]},
     {"title": "How do you identify?", "options": ["Female", "Male", "Non-binary", "Prefer not to say", "Other"]},
     {"title": "What best describes your race/ethnicity?", "options": ["White / Caucasian", "Black / African American", "Hispanic / Latino", "Asian / South Asian / East Asian", "Native Hawaiian / Pacific Islander", "American Indian / Alaska Native", "Prefer not to say", "Other"]},
