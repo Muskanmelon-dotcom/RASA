@@ -13,7 +13,7 @@ if "step" not in st.session_state:
 
 # --- Step 1: Welcome ---
 if st.session_state.step == 1:
-    st.title("🩸 Period Health Voice Tracker")
+    st.title("🩸 RASA: Wellness that Listens")
     st.write("Track your cycle, symptoms, and feelings using your voice.")
     if st.button("Get Started"):
         st.session_state.step = 2
