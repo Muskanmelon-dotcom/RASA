@@ -1,7 +1,6 @@
 import streamlit as st
 import sqlite3
 import datetime
-from streamlit_audio_recorder import audio_recorder
 
 # --- Streamlit Page Config ---
 st.set_page_config(page_title="Voice Health Tracker", page_icon="🎙️", layout="centered")
@@ -63,18 +62,18 @@ elif st.session_state.step == 3:
         st.session_state.reason = reason
         st.session_state.step = 4
 
-# --- Step 4: Health Description + Audio Recorder ---
+# --- Step 4: Health Description + Audio Input ---
 elif st.session_state.step == 4:
     st.title("Step 4: Describe Your Health Today")
-    user_input = st.text_area("Speak or type your update (voice coming soon)")
+    user_input = st.text_area("Speak or type your update")
 
     # --- Optional Voice Recorder ---
     st.subheader("Optional: Record Your Voice")
-    audio_bytes = audio_recorder()
+    audio_data = st.audio_input("Record your voice note (optional)")
 
-    if audio_bytes:
-        st.audio(audio_bytes, format="audio/wav")
-        # Here you could save the audio_bytes to a file or database if needed.
+    if audio_data:
+        st.audio(audio_data)
+        st.info("Audio recorded successfully! You can submit or record again.")
 
     if st.button("Submit"):
         if user_input.strip() == "":
