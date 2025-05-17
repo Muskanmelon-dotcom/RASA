@@ -1,115 +1,176 @@
 import streamlit as st
 import os
-from datetime import datetime
+from datetime import datetime as dt
+from period_tracker.app import PeriodTracker
+from period_tracker.utils.audio_recorder import record_audio_until_x
+import tempfile
+import uuid
 
-# --- Streamlit Config ---
-st.set_page_config(page_title="Voice Period Health Tracker", page_icon="🩸", layout="centered")
+# Initialize period tracker
+period_tracker = PeriodTracker()
 
-# --- Initialize States ---
-if "step" not in st.session_state:
-    st.session_state.step = 1
+# --- Page Config ---
+st.set_page_config(page_title="RASA: Wellness that Listens", page_icon="🩸", layout="centered")
+
+# --- In-Memory Storage ---
 if "user_profile" not in st.session_state:
     st.session_state.user_profile = {}
-if "conversation" not in st.session_state:
-    st.session_state.conversation = []
+if "step" not in st.session_state:
+    st.session_state.step = 1
 
 # --- Step 1: Welcome ---
 if st.session_state.step == 1:
-    st.title("🩸 Track Your Cycle, Understand Your Body")
-    st.write("We help you easily log period dates, symptoms, and moods to reveal patterns and insights about your health.")
+    st.title("🩸 RASA: Wellness that Listens")
+    st.write("Track your cycle, symptoms, and feelings using your voice.")
     if st.button("Get Started"):
         st.session_state.step = 2
 
-# --- Step 2: Basic Info ---
+# --- Step 2: Name ---
 elif st.session_state.step == 2:
-    st.title("👤 Tell us a little about yourself")
-    name = st.text_input("What's your name?")
-    age_range = st.radio("How old are you?", ["18-24", "25-34", "35-44", "45-54", "55+", "Prefer not to say"])
-    gender = st.radio("How do you identify?", ["Female", "Male", "Non-binary", "Other", "Prefer not to say"])
-    if st.button("Next"):
-        st.session_state.user_profile.update({"name": name, "age_range": age_range, "gender": gender})
+    st.title("Step 1: What's your name?")
+    name = st.text_input("Enter your name")
+    if st.button("Next") and name.strip():
+        st.session_state.user_profile["name"] = name
         st.session_state.step = 3
 
-# --- Step 3: Tracking Goals ---
+# --- Step 3: Age Range ---
 elif st.session_state.step == 3:
-    st.title("🎯 What are you hoping to track?")
-    goals = st.multiselect(
-        "Select all that apply",
-        ["Predicting my period", "Understanding symptoms", "Tracking irregularities",
-         "Trying to conceive", "General health awareness", "Something else"]
-    )
+    st.title("Step 2: Select your age range")
+    age_range = st.radio("Choose one", ["18-24", "25-34", "35-44", "45-54", "55+", "Prefer not to say"])
     if st.button("Next"):
-        st.session_state.user_profile["goals"] = goals
+        st.session_state.user_profile["age_range"] = age_range
         st.session_state.step = 4
 
-# --- Step 4: Last Period ---
+# --- Step 4: Gender ---
 elif st.session_state.step == 4:
-    st.title("🩸 When did your last period start?")
-    last_period_date = st.date_input("Pick the start date of your last period")
+    st.title("Step 3: How do you identify?")
+    gender = st.radio("Select one", ["Female", "Male", "Non-binary", "Prefer not to say", "Other"])
     if st.button("Next"):
-        st.session_state.user_profile["last_period"] = str(last_period_date)
+        st.session_state.user_profile["gender"] = gender
         st.session_state.step = 5
 
-# --- Step 5: Cycle Length ---
+# --- Step 5: Tracking Goals ---
 elif st.session_state.step == 5:
-    st.title("🔄 What's your typical cycle length?")
-    cycle_length = st.number_input("Enter the number of days", min_value=21, max_value=35, step=1)
+    st.title("Step 4: What are you hoping to track?")
+    goals = st.multiselect("Select all that apply:", [
+        "Predicting my period",
+        "Understanding symptoms (cramps, mood, etc.)",
+        "Tracking irregularities",
+        "Trying to conceive / Fertility tracking",
+        "General health awareness",
+        "Something else"
+    ])
     if st.button("Next"):
-        st.session_state.user_profile["cycle_length"] = cycle_length
+        st.session_state.user_profile["tracking_goals"] = goals
         st.session_state.step = 6
 
-# --- Step 6: Period Duration ---
+# --- Step 6: Last Period Date ---
 elif st.session_state.step == 6:
-    st.title("🩸 How long does your period usually last?")
-    period_duration = st.number_input("Enter the number of days", min_value=1, max_value=10, step=1)
+    st.title("Step 5: When did your last period start?")
+    last_period = st.date_input("Select the date")
     if st.button("Next"):
-        st.session_state.user_profile["period_duration"] = period_duration
+        st.session_state.user_profile["last_period_start"] = str(last_period)
         st.session_state.step = 7
 
-# --- Step 7: Privacy ---
+# --- Step 7: Typical Cycle Length ---
 elif st.session_state.step == 7:
-    st.title("🔒 Your Health Data is Private")
-    share_data = st.checkbox("Help improve the app by sharing anonymous usage data", value=False)
-    st.session_state.user_profile["share_data"] = share_data
-    if st.button("Finish Setup"):
+    st.title("Step 6: What's your typical cycle length?")
+    cycle_length = st.number_input("Enter days", min_value=15, max_value=60, value=28)
+    if st.button("Next"):
+        st.session_state.user_profile["cycle_length"] = cycle_length
         st.session_state.step = 8
 
-# --- Step 8: Voice Tracker ---
+# --- Step 8: Typical Period Duration ---
 elif st.session_state.step == 8:
+    st.title("Step 7: How long does your period usually last?")
+    period_duration = st.number_input("Enter days", min_value=1, max_value=10, value=5)
+    if st.button("Next"):
+        st.session_state.user_profile["period_duration"] = period_duration
+        st.session_state.step = 9
+
+# --- Step 9: Privacy & Data Usage ---
+elif st.session_state.step == 9:
+    st.title("Your Health Data is Private.")
+    st.write("We are committed to protecting your personal health information.")
+    share_data = st.checkbox("Help improve the app by sharing anonymous usage data", value=True)
+    if st.button("Finish Setup"):
+        st.session_state.user_profile["share_data"] = share_data
+        st.session_state.step = 10
+
+# --- Step 10: Voice-Based Tracker ---
+elif st.session_state.step == 10:
+    # Initialize session if not already done
+    if "session_id" not in st.session_state:
+        session_response = period_tracker.start_new_session()
+        st.session_state.session_id = session_response["session_id"]
+        st.session_state.session_status = "active"
+        st.session_state.logs = []
+        
     st.title("🎙️ Voice-Based Period Health Tracker")
-    st.write("Record updates about your health below. Your voice and conversation will be saved.")
-
-    audio_bytes = st.audio_input("Press record and speak your update")
-
-    if audio_bytes:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        os.makedirs("recordings", exist_ok=True)
-        file_path = f"recordings/{st.session_state.user_profile.get('name', 'user')}_{timestamp}.wav"
+    st.write("Speak and submit below. Your voice and logs will be saved for review.")
+    
+    # Show session status
+    st.write(f"Session ID: {st.session_state.session_id}")
+    if st.session_state.session_status == "active":
+        st.write("Status: Active")
+    else:
+        st.write("Status: Completed")
+    
+    # Record audio
+    if st.button("Start Recording"):
+        # Create temporary file
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.wav')
+        temp_file.close()
+        
+        # Record audio
+        record_audio_until_x(temp_file.name)
+        
+        # Process the voice note
+        result = period_tracker.process_voice_note(temp_file.name, st.session_state.session_id)
+        
+        if "error" in result:
+            st.error(result["error"])
+        else:
+            # Store the log
+            st.session_state.logs.append(result)
+            
+            # Show summary
+            st.success(result["summary"])
+            
+            # Show conversation history
+            st.subheader("Conversation History")
+            for msg in result["conversation_history"]:
+                role = "User" if msg["role"] == "user" else "Assistant"
+                st.write(f"**{role}:** {msg["content"]}")
+                
+            # Show warnings if any
+            if result["has_missing_data"]:
+                st.warning("Some required information is missing. Please provide more details.")
+            if result["has_unusual_symptoms"]:
+                st.warning("Unusual symptoms detected. Please consider consulting a healthcare professional.")
+                
+    # End session button
+    if st.button("End Session"):
+        end_result = period_tracker.end_current_session()
+        st.session_state.session_status = "completed"
+        st.success("Session ended successfully")
+        
+    # Show session statistics
+    st.subheader("Session Statistics")
+    if st.session_state.logs:
+        st.write(f"Total logs: {len(st.session_state.logs)}")
+        missing_data = sum(1 for log in st.session_state.logs if log["has_missing_data"])
+        unusual_symptoms = sum(1 for log in st.session_state.logs if log["has_unusual_symptoms"])
+        st.write(f"Logs with missing data: {missing_data}")
+        st.write(f"Logs with unusual symptoms: {unusual_symptoms}")
+        save_dir = "data/audio"
+        os.makedirs(save_dir, exist_ok=True)
+        file_path = f"{save_dir}/{st.session_state.user_profile.get('name', 'user')}_{timestamp}.wav"
         with open(file_path, "wb") as f:
-            f.write(audio_bytes)
+            f.write(audio_bytes.getvalue())
 
-        # Simulated Transcription and Response
-        transcription = "Simulated transcription of your voice input."
-        ai_response = "Simulated AI response based on your input."
-
-        # Display and Log
-        st.markdown(f"**You said:** {transcription}")
-        st.markdown(f"**AI replied:** {ai_response}")
+        st.success(f"Saved your voice as {file_path}")
         st.audio(audio_bytes, format="audio/wav")
+        st.info("Simulated AI Response Played (replace this with your backend output)")
 
-        st.session_state.conversation.append({
-            "audio_file": file_path,
-            "transcription": transcription,
-            "response": ai_response
-        })
-
-    if st.session_state.conversation:
-        st.markdown("### 📝 Conversation History")
-        for idx, entry in enumerate(st.session_state.conversation, start=1):
-            st.markdown(f"**Turn {idx}:**")
-            st.markdown(f"- Audio File: `{entry['audio_file']}`")
-            st.markdown(f"- Transcription: {entry['transcription']}")
-            st.markdown(f"- AI Response: {entry['response']}")
-            st.markdown("---")
-
-    st.write("Feel free to record again any time without reloading the page.")
+    st.write("You can record again any time without reloading the page.")
